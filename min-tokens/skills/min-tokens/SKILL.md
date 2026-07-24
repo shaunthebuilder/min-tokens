@@ -45,7 +45,7 @@ Each step is self-contained: exact path/symbol, the change, the reason, and a ch
 
 ## Fallback: status / off / on (only if the hook is disabled)
 The hook handles these for free; do this only if it didn't fire.
-- **status** — run both in one Bash block, then report context size & % of ceiling, this week's weighted usage by model, and the single highest-value action ("switch to Sonnet", "save + clear", or "nothing — efficient"). Scripts under `${CLAUDE_PLUGIN_ROOT}/scripts/` (fallback: `~/.claude/plugins/cache/min-tokens*/`):
+- **status** — run both in one Bash block, then report context size & % of ceiling, this week's weighted usage by model, and the single highest-value action ("switch to Sonnet", "save + clear", or "nothing — efficient"). Scripts under `${CLAUDE_PLUGIN_ROOT}/scripts/` (fallback: `~/.claude/plugins/cache/min-tokens/*/*/scripts/`):
   ```
   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/context-size.py"
   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/usage-report.py" --days 7

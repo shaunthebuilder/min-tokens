@@ -12,7 +12,7 @@ Command interception mirrors caveman-stats: match the RAW typed slash text
 expands the skill before this hook sees the prompt, the match simply misses and
 the SKILL.md answers instead — same behavior as before, never worse.
 """
-import sys, os, re, json, subprocess
+import sys, os, re, json, subprocess, time
 
 SOFT = int(os.environ.get("MIN_TOKENS_SOFT", "80000"))
 HARD = int(os.environ.get("MIN_TOKENS_HARD", "120000"))
@@ -20,6 +20,7 @@ HARD = int(os.environ.get("MIN_TOKENS_HARD", "120000"))
 PLUGIN_ROOT = os.environ.get("CLAUDE_PLUGIN_ROOT") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_DIR = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~/.claude")
 OFF_FLAG = os.path.join(CONFIG_DIR, ".min-tokens-off")
+WARN_DIR = os.path.join(CONFIG_DIR, ".min-tokens-warned")
 
 # /min-tokens [arg]  or  /min-tokens:min-tokens [arg]
 CMD_RE = re.compile(r"^/min-tokens(?::min-tokens)?(?:\s+(\S+))?\s*$", re.IGNORECASE)
@@ -32,7 +33,7 @@ def block(reason):
 def status_reason(transcript_path):
     scripts = os.path.join(PLUGIN_ROOT, "scripts")
     out = []
-    for name, extra in (("context-size.py", []), ("usage-report.py", ["--days", "7"])):
+    for name, extra in (("context-size.py", [transcript_path] if transcript_path else []), ("usage-report.py", ["--days", "7"])):
         p = os.path.join(scripts, name)
         try:
             r = subprocess.run([sys.executable, p, *extra], capture_output=True,
@@ -40,8 +41,8 @@ def status_reason(transcript_path):
             out.append((r.stdout or r.stderr).strip())
         except Exception:
             out.append(f"({name} unavailable)")
-    out.append("Highest-value action: context near/over ceiling → /min-tokens save + /clear; "
-               "expensive-model share high on routine work → switch to Sonnet; else nothing.")
+    out.append("Highest-value action: if context is near or over the ceiling, run /min-tokens save "
+               "then /clear; if an expensive model is doing routine work, switch to Sonnet; else nothing.")
     return "\n".join(x for x in out if x)
 
 
@@ -67,6 +68,24 @@ def handle_command(arg, transcript_path):
     return True
 
 
+def warn_once(session_id, level):
+    """True the first time this session crosses this level; False after. Never raises."""
+    try:
+        os.makedirs(WARN_DIR, exist_ok=True)
+        now = time.time()
+        for f in os.listdir(WARN_DIR):  # prune markers older than 7d
+            p = os.path.join(WARN_DIR, f)
+            if now - os.path.getmtime(p) > 604800:
+                os.remove(p)
+        marker = os.path.join(WARN_DIR, f"{session_id or 'unknown'}-{level}")
+        if os.path.exists(marker):
+            return False
+        open(marker, "w").close()
+        return True
+    except Exception:
+        return True  # on any failure, warn — a missed warning is worse than a repeat
+
+
 def last_assistant_usage(path):
     # min: read only the tail (~200KB) — the last assistant turn is always near EOF; avoids O(file) on 600K-token sessions.
     with open(path, "rb") as f:
@@ -89,10 +108,14 @@ def last_assistant_usage(path):
 def main():
     data = json.loads(sys.stdin.read().lstrip("﻿"))
     tp = data.get("transcript_path")
+    sid = data.get("session_id")
 
     m = CMD_RE.match((data.get("prompt") or "").strip())
     if m and handle_command(m.group(1), tp):
         return  # command handled + blocked; skip the ceiling warning
+
+    if os.path.exists(OFF_FLAG):
+        return
 
     if not tp or not os.path.exists(tp):
         return
@@ -104,9 +127,11 @@ def main():
            + u.get("cache_creation_input_tokens", 0))
     k = ctx // 1000
     if ctx >= HARD:
-        print(f"⚠ context ~{k}K (over hard ceiling) — STOP: run /min-tokens save, then /clear before continuing.")
+        if warn_once(sid, "hard"):
+            print(f"⚠ context ~{k}K (over hard ceiling) — STOP: run /min-tokens save, then /clear before continuing.")
     elif ctx >= SOFT:
-        print(f"⚠ context ~{k}K — wrap up this task, then /min-tokens save + /clear (not /compact).")
+        if warn_once(sid, "soft"):
+            print(f"⚠ context ~{k}K — wrap up this task, then /min-tokens save + /clear (not /compact).")
 
 
 if __name__ == "__main__":
