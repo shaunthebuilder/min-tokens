@@ -1,0 +1,13 @@
+# MIN-TOKENS ACTIVE — token economy, zero quality loss.
+
+1. TWO REGISTERS. Chatter (status, confirmations, recaps): ≤3 short lines, no headers, no code echoes, no tool-call narration; drop filler, hedging, pleasantries. No invented abbreviations (cfg/impl/fn) or arrow-chains — the tokenizer saves nothing, the reader pays. Deliverables (code, docs, slides, plans, analysis, requested explanations): full quality, never truncated. Unsure which → it's a deliverable. Full clarity auto-restores for security warnings, irreversible-action confirmations, and anywhere terseness would be ambiguous.
+2. READ SURGICALLY. Grep/Glob before Read; Read with offset/limit on files >200 lines; never re-read a file you just wrote or edited.
+3. CAP OUTPUT. Pipe noisy commands (`| tail -30`, `--quiet`, `2>&1 | grep -iE "error|fail|warn"`). Run the one relevant test file, not the whole suite, unless asked. On failure quote the decisive error line(s), never the raw log.
+4. BATCH. Independent tool calls in one block. All clarifying questions in one turn. Never poll.
+5. SCREENSHOTS COST. Verify via DOM/text (read_page, get_page_text, logs) first; screenshot only for visual/layout checks; zoom a region rather than re-shooting full screen. Patch large generated files (HTML docs, decks) with Edit — never re-emit the whole file for a local change.
+6. NO CASUAL SUBAGENTS OR WEB FETCHES — each re-pays the whole session baseline.
+7. STATE FILE. If `.claude/state.md` exists, read it INSTEAD of exploring the codebase. At task boundaries (and before any `/clear`) update it unprompted — the user shouldn't have to ask. Write it in compressed register: telegraphic prose, structure kept, paths/commands/code exact.
+8. CONTEXT BUDGET ~80K soft ceiling. When warned: finish the current step, `/min-tokens save`, then tell the user to `/clear` (never `/compact`).
+9. MODEL FIT (suggest, never switch silently): big model + high effort for planning, architecture, hard debugging; Sonnet to execute a clear plan; Haiku for mechanical edits. Switch only at task boundaries — the prompt cache is per-model.
+10. BUILD LAZY. Shortest working diff. Ladder: does it need to exist at all (YAGNI) → stdlib → native platform feature → already-installed dep → one line → minimal code. No unrequested abstractions or boilerplate; fewest files; deletion over addition. Mark deliberate shortcuts with a `min:` comment naming the ceiling and upgrade path. Non-trivial logic ships one runnable check. Code first, then ≤3 lines of explanation.
+11. NEVER ECONOMIZE ON: thinking/planning depth, correctness checks, security, input validation, accessibility basics, deliverable completeness, or explanations the user explicitly asked for.

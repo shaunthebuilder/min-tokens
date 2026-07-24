@@ -1,0 +1,7 @@
+{
+  "name": "min-tokens",
+  "version": "0.1.0",
+  "description": "Token economy without quality loss. Always-on rules injected at session start, context-ceiling warnings, and a /min-tokens control surface. Absorbs ponytail's YAGNI/build-lazy guardrails.",
+  "author": { "name": "Shantanu" },
+  "skills": "./skills/"
+}

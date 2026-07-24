@@ -1,0 +1,12 @@
+{
+  "name": "min-tokens",
+  "owner": { "name": "Shantanu" },
+  "metadata": { "description": "Local single-plugin marketplace for min-tokens (token economy without quality loss)." },
+  "plugins": [
+    {
+      "name": "min-tokens",
+      "source": "./",
+      "description": "Token economy without quality loss: session-start rules, context-ceiling warnings, /min-tokens control surface."
+    }
+  ]
+}

@@ -1,0 +1,209 @@
+<title>min-tokens — the one-page guide</title>
+<style>
+  :root {
+    --paper: #f3f4f6;
+    --card: #ffffff;
+    --ink: #1b1e24;
+    --muted: #626871;
+    --rule: #dfe2e7;
+    --accent: #b06a10;        /* ochre — the single "your action" hue */
+    --accent-soft: #f4e9d6;
+    --go: #3f7d5c;            /* semantic: automatic / handled */
+    --shadow: 0 1px 2px rgba(20,24,30,.05), 0 8px 24px rgba(20,24,30,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #14161a;
+      --card: #1c1f25;
+      --ink: #e7e9ec;
+      --muted: #969ca6;
+      --rule: #2b2f37;
+      --accent: #e0a542;
+      --accent-soft: #33291a;
+      --go: #6bbf93;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 28px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"] {
+    --paper: #f3f4f6; --card: #ffffff; --ink: #1b1e24; --muted: #626871;
+    --rule: #dfe2e7; --accent: #b06a10; --accent-soft: #f4e9d6; --go: #3f7d5c;
+    --shadow: 0 1px 2px rgba(20,24,30,.05), 0 8px 24px rgba(20,24,30,.06);
+  }
+  :root[data-theme="dark"] {
+    --paper: #14161a; --card: #1c1f25; --ink: #e7e9ec; --muted: #969ca6;
+    --rule: #2b2f37; --accent: #e0a542; --accent-soft: #33291a; --go: #6bbf93;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 28px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: clamp(2rem, 6vw, 4.5rem) 1.25rem 4rem;
+  }
+  .mono { font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; }
+
+  .eyebrow {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: .72rem;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 .9rem;
+  }
+  h1 {
+    font-size: clamp(2rem, 6vw, 2.7rem);
+    line-height: 1.05;
+    letter-spacing: -.02em;
+    text-wrap: balance;
+    margin: 0 0 .6rem;
+    font-weight: 680;
+  }
+  .lede {
+    font-size: 1.08rem;
+    color: var(--muted);
+    margin: 0 0 2.5rem;
+    max-width: 34ch;
+  }
+  .lede b { color: var(--ink); font-weight: 600; }
+
+  /* Hero: the one action */
+  .hero {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--accent);
+    border-radius: 12px;
+    padding: 1.5rem 1.5rem 1.6rem;
+    box-shadow: var(--shadow);
+    margin-bottom: 1rem;
+  }
+  .hero .tag {
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: .7rem; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent); font-weight: 600; margin: 0 0 .7rem;
+  }
+  .hero h2 {
+    font-size: 1.32rem; line-height: 1.25; margin: 0 0 .7rem; font-weight: 640;
+    text-wrap: balance;
+  }
+  .hero p { margin: 0; color: var(--muted); font-size: .98rem; }
+  .warnbar {
+    display: inline-flex; align-items: center; gap: .5rem;
+    background: var(--accent-soft); color: var(--accent);
+    border-radius: 7px; padding: .5rem .75rem; margin: .2rem 0 1rem;
+    font-family: ui-monospace, Menlo, monospace; font-size: .84rem;
+    font-weight: 600;
+  }
+  kbd {
+    font-family: ui-monospace, Menlo, monospace;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-bottom-width: 2px;
+    border-radius: 6px;
+    padding: .12rem .5rem;
+    font-size: .92em;
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .note {
+    font-size: .86rem; color: var(--muted); margin: 1.4rem 0 3rem;
+    padding-left: 1rem; border-left: 2px solid var(--rule);
+  }
+
+  h3.section {
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: .74rem; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600;
+    margin: 0 0 1rem; padding-bottom: .5rem; border-bottom: 1px solid var(--rule);
+  }
+
+  ul.auto { list-style: none; margin: 0 0 3rem; padding: 0; display: grid; gap: .85rem; }
+  ul.auto li { display: flex; gap: .7rem; align-items: baseline; font-size: .98rem; }
+  ul.auto li .dot {
+    flex: none; width: .62rem; height: .62rem; border-radius: 50%;
+    background: var(--go); margin-top: .35rem;
+  }
+  ul.auto li span.t { color: var(--ink); }
+  ul.auto li span.t em { font-style: normal; color: var(--muted); }
+
+  table { width: 100%; border-collapse: collapse; margin: 0 0 1.4rem; font-size: .94rem; }
+  table td { padding: .7rem .4rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  table tr td:first-child { width: 42%; white-space: nowrap; }
+  table td code {
+    font-family: ui-monospace, Menlo, monospace; font-size: .9em;
+    background: var(--accent-soft); color: var(--accent);
+    padding: .18rem .5rem; border-radius: 6px; font-weight: 600;
+  }
+  table td.desc { color: var(--muted); }
+  table td .free {
+    display: inline-block; margin-left: .4rem; font-family: ui-monospace, Menlo, monospace;
+    font-size: .72em; letter-spacing: .04em; text-transform: uppercase; font-weight: 600;
+    color: var(--go);
+  }
+
+  .off {
+    background: var(--card); border: 1px solid var(--rule); border-radius: 10px;
+    padding: 1.1rem 1.25rem; font-size: .92rem; color: var(--muted);
+    display: flex; flex-wrap: wrap; gap: .5rem; align-items: center;
+  }
+  .off b { color: var(--ink); font-weight: 600; }
+
+  footer { margin-top: 3rem; padding-top: 1.2rem; border-top: 1px solid var(--rule);
+    font-size: .8rem; color: var(--muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
+  footer .mono { color: var(--muted); }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">min-tokens · quick guide</p>
+  <h1>It saves tokens so you don't have to think about it.</h1>
+  <p class="lede">It's installed and always on. <b>You do essentially one thing.</b></p>
+
+  <div class="hero">
+    <p class="tag">← the one thing you do</p>
+    <h2>When you see the context warning, type <kbd>/clear</kbd>.</h2>
+    <div class="warnbar">⚠ context ~80K — wrap up, then /clear</div>
+    <p>That's the whole job. Your work is saved automatically the moment before, so <kbd>/clear</kbd> starts a fresh, cheap session that already knows where you left off. Use <kbd>/clear</kbd>, never <span class="mono">/compact</span>.</p>
+  </div>
+
+  <p class="note">Why not <span class="mono">/compact</span>? Compacting re-reads your entire session to summarize it — that's the expensive thing min-tokens exists to avoid. <kbd>/clear</kbd> + the saved state is the cheap path.</p>
+
+  <h3 class="section">Everything else is automatic</h3>
+  <ul class="auto">
+    <li><span class="dot"></span><span class="t">Turns on by itself in <b>every new conversation</b> — <em>nothing to start.</em></span></li>
+    <li><span class="dot"></span><span class="t">Keeps answers lean and reads your files surgically — <em>full quality on real work, terse on chatter.</em></span></li>
+    <li><span class="dot"></span><span class="t">Saves your project's state at natural stopping points — <em>so the next session skips re-exploring.</em></span></li>
+    <li><span class="dot"></span><span class="t">Warns you <b>only</b> when a session gets large — <em>silent the rest of the time.</em></span></li>
+  </ul>
+
+  <h3 class="section">Optional — nice, never required</h3>
+  <ul class="auto">
+    <li><span class="dot" style="background:var(--accent)"></span><span class="t">If Claude suggests <b>“switch to Sonnet,”</b> change the model in the picker — <em>cheaper for routine work. It never switches on its own.</em></span></li>
+    <li><span class="dot" style="background:var(--accent)"></span><span class="t">Curious about usage? Type <kbd>/min-tokens</kbd> anytime — <em>answers instantly for free, showing your week + the single best next move.</em></span></li>
+  </ul>
+
+  <h3 class="section">Commands (all optional)</h3>
+  <table>
+    <tr><td><code>/min-tokens</code></td><td class="desc">Show context size, this week's usage, and the one best action.<span class="free">free</span></td></tr>
+    <tr><td><code>/min-tokens save</code></td><td class="desc">Save project state right now (also happens automatically).</td></tr>
+    <tr><td><code>/min-tokens off</code></td><td class="desc">Turn it off. <code style="background:none;color:var(--muted);padding:0">/min-tokens on</code> brings it back.<span class="free">free</span></td></tr>
+  </table>
+  <p class="note"><b style="color:var(--go)">free</b> = answered on the spot without spending any tokens — the command never reaches the model. Only <kbd>/min-tokens save</kbd> runs the model, because it summarizes the conversation.</p>
+
+  <div class="off">
+    <b>To stop it entirely:</b> <kbd>/min-tokens off</kbd> — reversible anytime. Nothing to uninstall.
+  </div>
+
+  <footer>
+    <span>Installed &amp; active · Claude Code</span>
+    <span class="mono">do less · spend less</span>
+  </footer>
+</div>

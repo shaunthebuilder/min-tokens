@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>min-tokens — Token economy, zero quality loss</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F7F3EA; --panel:#F0EADC; --card:#FFFFFF; --card-2:#FCFAF4;
+    --ink:#1F2D38; --ink-soft:#51606B; --muted:#8C8576; --line:#E5DDCD;
+    --accent:#C0562E; --positive:#5C6B39; --positive-2:#46552C; --info:#2E5276; --dark:#1E2B38;
+    --tint-accent:#F2E1D5; --tint-positive:#E3E7D6; --tint-info:#DCE5EE; --tint-neutral:#ECE3D2;
+    --dot:#D8CFBC;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;}
+  body{overflow-x:hidden;}
+  h1,h2,h3{font-family:Spectral,serif;font-weight:600;letter-spacing:-0.015em;text-wrap:balance;margin:0;}
+  p{margin:0;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 90px;}
+  .prose{max-width:700px;}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-weight:600;letter-spacing:.20em;text-transform:uppercase;color:var(--accent);font-size:14px;}
+  .secnum{font-family:Spectral,serif;font-weight:600;color:var(--accent);font-size:44px;line-height:1;}
+  .dots{width:110px;height:110px;background-image:radial-gradient(var(--dot) 1.4px,transparent 1.4px);background-size:13px 13px;}
+  .dots-sm{width:30px;height:30px;background-image:radial-gradient(#C9BFA9 1.3px,transparent 1.3px);background-size:7.5px 7.5px;}
+  .ec{border-radius:50%;border:1.5px solid var(--c,var(--accent));display:flex;align-items:center;justify-content:center;flex:none;width:var(--s,46px);height:var(--s,46px);}
+  section{padding:96px 0;border-bottom:1px solid var(--line);}
+  section:last-of-type{border-bottom:none;}
+  table{width:100%;border-collapse:collapse;font-size:16px;}
+  th{text-align:left;padding:10px 12px;border-bottom:2px solid var(--line);font:600 13px 'IBM Plex Sans';letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
+  td{padding:13px 12px;border-bottom:1px solid #EDE6D8;font-family:'IBM Plex Mono',monospace;color:var(--ink-soft);vertical-align:top;}
+  td.label{font-family:'IBM Plex Sans',sans-serif;color:var(--ink);font-weight:500;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:32px;}
+  .num-col{text-align:right;}
+  code, .inline-code{font-family:'IBM Plex Mono',monospace;background:var(--tint-neutral);color:var(--ink);padding:2px 7px;border-radius:5px;font-size:.92em;}
+  pre{background:var(--dark);border-radius:12px;padding:24px 28px;overflow-x:auto;margin:0;}
+  pre code{background:none;color:#C7CFD6;padding:0;font-size:15px;line-height:1.8;}
+  .taglist{display:flex;flex-wrap:wrap;gap:10px;}
+  .tag{font:500 13px 'IBM Plex Sans';padding:6px 14px;border-radius:999px;}
+  .tag-accent{background:var(--tint-accent);color:var(--accent);}
+  .tag-positive{background:var(--tint-positive);color:var(--positive-2);}
+  .tag-info{background:var(--tint-info);color:var(--info);}
+  .tag-neutral{background:var(--tint-neutral);color:var(--ink-soft);}
+  .footer-mark{display:flex;align-items:center;justify-content:space-between;padding:40px 90px;}
+  .footer-mark .label{font:400 14px 'IBM Plex Sans';color:var(--muted);}
+  a{color:var(--info);}
+  ::selection{background:var(--tint-accent);}
+  @media (max-width:820px){
+    .wrap, .footer-mark{padding-left:24px;padding-right:24px;}
+    section{padding:64px 0;}
+    .cover h1{font-size:64px !important;}
+    .grid-2{grid-template-columns:1fr !important;}
+  }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<section class="cover" style="border-bottom:none;padding:0;position:relative;background:var(--paper);">
+  <div class="dots" style="position:absolute;top:80px;right:90px;"></div>
+  <div class="wrap" style="padding-top:120px;padding-bottom:110px;">
+    <div class="eyebrow" style="margin-bottom:30px;">Claude Code Plugin &nbsp;·&nbsp; Whitepaper &nbsp;·&nbsp; v2</div>
+    <h1 style="font-size:118px;line-height:.98;margin-bottom:30px;">min-tokens</h1>
+    <div style="width:88px;height:3px;background:var(--accent);margin-bottom:28px;"></div>
+    <p style="font:400 27px/1.45 'IBM Plex Sans';color:var(--ink-soft);max-width:820px;margin-bottom:44px;">
+      Token economy, zero quality loss. A single Claude Code plugin that stretches a fixed-price plan
+      3–5&times; by cutting what a session wastes on chatter, redundant context, and model overkill —
+      while never touching an answer's thinking, correctness, or completeness.
+    </p>
+    <div style="display:flex;gap:44px;flex-wrap:wrap;">
+      <div><div class="mono" style="font-size:14px;color:var(--muted);">AUTHOR</div><div style="font:500 17px 'IBM Plex Sans';margin-top:4px;">Shantanu Rastogi</div></div>
+      <div><div class="mono" style="font-size:14px;color:var(--muted);">DATE</div><div style="font:500 17px 'IBM Plex Sans';margin-top:4px;">24 July 2026</div></div>
+      <div><div class="mono" style="font-size:14px;color:var(--muted);">STATUS</div><div style="font:500 17px 'IBM Plex Sans';margin-top:4px;color:var(--positive-2);">Built, installed, active</div></div>
+      <div><div class="mono" style="font-size:14px;color:var(--muted);">LICENSE</div><div style="font:500 17px 'IBM Plex Sans';margin-top:4px;">MIT, open source</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 01 INTENT -->
+<section>
+  <div class="wrap">
+    <div class="secnum">01</div>
+    <h2 style="font-size:52px;margin:20px 0 22px;">The plan was fixed.<br>The spend wasn't.</h2>
+    <p class="prose" style="font:400 20px/1.6 'IBM Plex Sans';color:var(--ink-soft);margin-bottom:56px;">
+      min-tokens exists because a $20/month Pro plan and an agentic coding habit are on a collision course.
+      The intent was never to make Claude say less — it was to find and remove the token spend that
+      buys the user <em>nothing</em>: idle chatter, re-read context, oversized tool results, and reflexive
+      use of the most expensive model for work a cheaper one handles identically well.
+    </p>
+
+    <div style="display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:start;" class="grid-2">
+      <div>
+        <div class="eyebrow" style="margin-bottom:18px;">Ground truth, measured 24 Jul 2026</div>
+        <p style="font:400 18px/1.6 'IBM Plex Sans';color:var(--ink-soft);margin-bottom:24px;">
+          Before writing a rule, the plan analyzed 265MB of local transcripts — 112 sessions,
+          ~16,000 assistant calls — to find out where tokens actually went, not where folklore said they went.
+        </p>
+        <table>
+          <thead><tr><th>bucket</th><th class="num-col">tokens</th><th class="num-col">weighted $</th></tr></thead>
+          <tbody>
+            <tr><td class="label">cache reads</td><td class="num-col">~2.50B</td><td class="num-col" style="color:var(--accent);font-weight:600;">~$1,545 · 47%</td></tr>
+            <tr><td class="label">cache writes</td><td class="num-col">~112M</td><td class="num-col">~$990 · 30%</td></tr>
+            <tr><td class="label">output</td><td class="num-col">~22.2M</td><td class="num-col">~$755 · 23%</td></tr>
+            <tr><td class="label">raw input</td><td class="num-col">~13.7M</td><td class="num-col">~$45</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card" style="background:var(--panel);border:1px solid var(--line);text-align:center;">
+        <div class="ec" style="--c:var(--accent);--s:64px;background:var(--accent);border-color:var(--accent);margin:0 auto 22px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.75" width="30" height="30"><path d="M3 3v18h18M8 17l4-6 3 3 5-8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div style="font-size:104px;line-height:.9;color:var(--accent);">97%</div>
+        <div class="mono" style="font-size:16px;letter-spacing:.06em;color:var(--accent);margin-top:16px;">OF WEIGHTED SPEND</div>
+        <p style="font:400 17px 'IBM Plex Sans';color:var(--ink-soft);margin-top:16px;">
+          on Opus 4.8 and Fable 5 — the two most expensive tiers — for work that runs identically on
+          Sonnet 5 at roughly a third of the cost.
+        </p>
+      </div>
+    </div>
+
+    <div style="margin-top:56px;">
+      <div class="eyebrow" style="margin-bottom:16px;">Session shape</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;">
+        <div class="card"><div style="font-size:15px;color:var(--muted);margin-bottom:10px;">Median start context</div><div class="mono" style="font-size:26px;font-weight:600;">32K</div><div style="font-size:13px;color:var(--muted);margin-top:6px;">p90: 41K</div></div>
+        <div class="card"><div style="font-size:15px;color:var(--muted);margin-bottom:10px;">Median peak context</div><div class="mono" style="font-size:26px;font-weight:600;">118K</div><div style="font-size:13px;color:var(--muted);margin-top:6px;">p90: 323K · max: 612K</div></div>
+        <div class="card"><div style="font-size:15px;color:var(--muted);margin-bottom:10px;">Turns per user message</div><div class="mono" style="font-size:26px;font-weight:600;">~22</div><div style="font-size:13px;color:var(--muted);margin-top:6px;">90 turns / 4 messages, median</div></div>
+        <div class="card"><div style="font-size:15px;color:var(--muted);margin-bottom:10px;">Oversized tool results</div><div class="mono" style="font-size:26px;font-weight:600;">270</div><div style="font-size:13px;color:var(--muted);margin-top:6px;">&gt;10K tokens, mostly screenshots</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 NON-NEGOTIABLES -->
+<section style="background:var(--card-2);">
+  <div class="wrap">
+    <div class="secnum">02</div>
+    <h2 style="font-size:48px;margin:20px 0 22px;">The line the plugin<br>will not cross.</h2>
+    <p class="prose" style="font:400 19px/1.6 'IBM Plex Sans';color:var(--ink-soft);margin-bottom:44px;">
+      Every subsequent design decision answers to one governing rule, borrowed and sharpened from an
+      external review: <strong style="color:var(--ink);">every injected token must provably save more than it costs.</strong>
+      Economy applies to five things only — and explicitly never to six others.
+    </p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;" class="grid-2">
+      <div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+          <div class="ec" style="--c:var(--positive);--s:36px;"><svg viewBox="0 0 24 24" fill="none" stroke="var(--positive)" stroke-width="2" width="18" height="18"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <span style="font:600 18px 'IBM Plex Sans';color:var(--positive-2);">Economize on</span>
+        </div>
+        <ul style="margin:0;padding-left:0;list-style:none;line-height:2.1;color:var(--ink-soft);font-size:17px;">
+          <li>Process chatter — status, confirmations, recaps</li>
+          <li>Redundant context — re-reading what's already known</li>
+          <li>Oversized tool results — logs, screenshots, dumps</li>
+          <li>Model overkill — Opus/Fable for Sonnet-shaped work</li>
+          <li>Session lifecycle — letting context balloon past its useful size</li>
+        </ul>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+          <div class="ec" style="--c:var(--accent);--s:36px;"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" width="16" height="16"><path d="M18 6L6 18M6 6l12 12" stroke-linecap="round"/></svg></div>
+          <span style="font:600 18px 'IBM Plex Sans';color:var(--accent);">Never economize on</span>
+        </div>
+        <ul style="margin:0;padding-left:0;list-style:none;line-height:2.1;color:var(--ink-soft);font-size:17px;">
+          <li>Thinking, planning, and reasoning depth</li>
+          <li>Deliverable completeness — code, docs, decks, analysis</li>
+          <li>Correctness checks, security, input validation</li>
+          <li>Accessibility basics</li>
+          <li>Any explanation the user explicitly asked for</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 FEATURES -->
+<section>
+  <div class="wrap">
+    <div class="secnum">03</div>
+    <h2 style="font-size:52px;margin:20px 0 22px;">One skill.<br>Zero touch.</h2>
+    <p class="prose" style="font:400 20px/1.6 'IBM Plex Sans';color:var(--ink-soft);margin-bottom:52px;">
+      The product surface is deliberately narrow: a single user-visible skill, <code>/min-tokens</code>,
+      backed by hooks that do free local work every turn and only spend tokens when a threshold is
+      actually crossed.
+    </p>
+
+    <div style="display:flex;flex-direction:column;gap:24px;">
+      <div class="card" style="display:flex;gap:26px;align-items:flex-start;">
+        <div class="ec" style="--c:var(--accent);--s:54px;"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.75" width="24" height="24"><path d="M3 5h18M3 12h18M3 19h18" stroke-linecap="round"/></svg></div>
+        <div>
+          <div style="font:600 21px Spectral,serif;margin-bottom:8px;">Two registers, one firewall</div>
+          <p style="font:400 17px/1.6 'IBM Plex Sans';color:var(--ink-soft);max-width:620px;">
+            <strong>Chatter</strong> (status, confirmations, recaps) is capped at three short lines, no headers,
+            no tool-call narration, no invented abbreviations. <strong>Deliverables</strong> (code, docs, decks,
+            explanations) are never compressed — full quality, never truncated. When it's unclear which one
+            applies, it's treated as a deliverable.
+          </p>
+        </div>
+      </div>
+
+      <div class="card" style="display:flex;gap:26px;align-items:flex-start;">
+        <div class="ec" style="--c:var(--info);--s:54px;"><svg viewBox="0 0 24 24" fill="none" stroke="var(--info)" stroke-width="1.75" width="24" height="24"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/></svg></div>
+        <div>
+          <div style="font:600 21px Spectral,serif;margin-bottom:8px;">Zero-token slash commands</div>
+          <p style="font:400 17px/1.6 'IBM Plex Sans';color:var(--ink-soft);max-width:640px;">
+            <code>/min-tokens</code>, <code>off</code>, and <code>on</code> are answered directly by a
+            <code>UserPromptSubmit</code> hook returning <code>{"decision":"block","reason":"…report…"}</code> —
+            the prompt never reaches the model. Only <code>/min-tokens save</code> spends a turn, because
+            writing state.md requires the model to summarize the conversation.
+          </p>
+        </div>
+      </div>
+
+      <div class="card" style="display:flex;gap:26px;align-items:flex-start;">
+        <div class="ec" style="--c:var(--positive);--s:54px;"><svg viewBox="0 0 24 24" fill="none" stroke="var(--positive)" stroke-width="1.75" width="24" height="24"><path d="M3 12h18M3 6h18M3 18h18"/></svg></div>
+        <div>
+          <div style="font:600 21px Spectral,serif;margin-bottom:8px;">Context-ceiling warnings</div>
+          <p style="font:400 17px/1.6 'IBM Plex Sans';color:var(--ink-soft);max-width:640px;">
+            The same hook estimates live context from the transcript on every message and stays silent
+            below 80K. At 80K it prints a one-line soft warning; at 120K, a hard one. Thresholds are
+            overridable via <code>MIN_TOKENS_SOFT</code> / <code>MIN_TOKENS_HARD</code>.
+          </p>
+        </div>
+      </div>
+
+      <div class="card" style="display:flex;gap:26px;align-items:flex-start;">
+        <div class="ec" style="--c:var(--accent);--s:54px;"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.75" width="24" height="24"><path d="M9 12h6M9 16h6M9 8h6M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg></div>
+        <div>
+          <div style="font:600 21px Spectral,serif;margin-bottom:8px;">state.md protocol</div>
+          <p style="font:400 17px/1.6 'IBM Plex Sans';color:var(--ink-soft);max-width:640px;">
+            <code>/min-tokens save</code> writes a compressed-register state file — telegraphic prose,
+            structure kept, every path/command/name exact — so the next session reads ~1–2K tokens of
+            state instead of re-exploring the codebase. Then the user runs <code>/clear</code>, never
+            <code>/compact</code>.
+          </p>
+        </div>
+      </div>
+
+      <div class="card" style="display:flex;gap:26px;align-items:flex-start;">
+        <div class="ec" style="--c:var(--info);--s:54px;"><svg viewBox="0 0 24 24" fill="none" stroke="var(--info)" stroke-width="1.75" width="24" height="24"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 4v16"/></svg></div>
+        <div>
+          <div style="font:600 21px Spectral,serif;margin-bottom:8px;">Big-file discipline</div>
+          <p style="font:400 17px/1.6 'IBM Plex Sans';color:var(--ink-soft);max-width:640px;">
+            Large generated files — HTML docs, decks, this whitepaper — are patched with an edit tool,
+            never re-emitted whole for a local change, and never read back immediately after being written.
+            Added after the worst measured offenders turned out to be exactly this workflow.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:48px;display:flex;border:1px solid var(--line);border-radius:18px;overflow:hidden;">
+      <div style="flex:1;background:var(--tint-accent);padding:30px;text-align:center;">
+        <div style="font:600 15px 'IBM Plex Sans';color:var(--accent);margin-bottom:10px;">/min-tokens status — before</div>
+        <div style="font-size:38px;color:var(--accent);font-family:Spectral,serif;font-weight:600;">1 model turn</div>
+        <div class="mono" style="font-size:13px;color:var(--muted);margin-top:8px;">full cache read + skill load + output, at whatever context size the session has reached</div>
+      </div>
+      <div style="flex:1;background:var(--tint-positive);padding:30px;text-align:center;">
+        <div style="font:600 15px 'IBM Plex Sans';color:var(--positive-2);margin-bottom:10px;">/min-tokens status — after</div>
+        <div style="font-size:38px;color:var(--positive-2);font-family:Spectral,serif;font-weight:600;">0 model turns</div>
+        <div class="mono" style="font-size:13px;color:var(--muted);margin-top:8px;">hook computes usage-report + context-size locally, blocks the prompt, returns the report</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 EVOLUTION -->
+<section style="background:var(--card-2);">
+  <div class="wrap">
+    <div class="secnum">04</div>
+    <h2 style="font-size:52px;margin:20px 0 22px;">Evolution: v1 to v2.</h2>
+    <p class="prose" style="font:400 19px/1.6 'IBM Plex Sans';color:var(--ink-soft);margin-bottom:40px;">
+      v1 shipped from the measured ground truth in §01: a plugin absorbing and retiring an older,
+      six-skill sprawl (<em>ponytail</em>), replacing it with one skill, invisible hooks, and a rules
+      block under 500 tokens. v2 followed a deep external review — a full read of a comparable
+      open-source project, <span class="mono">caveman</span> — adopted where the evidence held, rejected
+      where it didn't.
+    </p>
+
+    <div class="card" style="margin-bottom:32px;">
+      <div style="font:600 15px 'IBM Plex Sans';letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;">The finding that mattered most</div>
+      <p style="font:400 18px/1.65 'IBM Plex Sans';color:var(--ink);">
+        Caveman's own published numbers showed its output-compression skill costs ~1–1.5K input tokens
+        per turn, and a 65% output reduction collapses to just <strong>14–21% session-level savings</strong>
+        — because output is a minority of spend. That matched this project's own measurement almost
+        exactly: output is 23% of weighted spend, cache reads are 47%. The two projects' levers barely
+        overlap, which is exactly why min-tokens' rules block stays under 500 tokens instead of growing
+        toward caveman's 1–1.5K.
+      </p>
+    </div>
+
+    <table style="margin-bottom:16px;">
+      <thead><tr><th>from caveman</th><th>verdict</th><th>where it landed</th></tr></thead>
+      <tbody>
+        <tr><td class="label">Tokenizer anti-rules (no invented abbreviations, no arrow-chains)</td><td><span class="tag tag-positive">adopt</span></td><td class="label" style="font-family:'IBM Plex Sans';font-weight:400;">Rule 1 — free clarity, zero token cost</td></tr>
+        <tr><td class="label">Drop filler / hedging / tool-call narration</td><td><span class="tag tag-positive">adopt</span></td><td class="label" style="font-family:'IBM Plex Sans';font-weight:400;">Rule 1 — chatter register only</td></tr>
+        <tr><td class="label">Quote the decisive error line, never the raw log</td><td><span class="tag tag-positive">adopt</span></td><td class="label" style="font-family:'IBM Plex Sans';font-weight:400;">Rule 3</td></tr>
+        <tr><td class="label">Auto-Clarity — terseness suspends when ambiguous</td><td><span class="tag tag-positive">adopt</span></td><td class="label" style="font-family:'IBM Plex Sans';font-weight:400;">Rule 1 — protects security &amp; irreversible actions</td></tr>
+        <tr><td class="label">Hook-answered slash commands (<code>decision:"block"</code>)</td><td><span class="tag tag-positive">adopt</span></td><td class="label" style="font-family:'IBM Plex Sans';font-weight:400;">the single biggest mechanism stolen</td></tr>
+        <tr><td class="label">Compressed register for persistent files</td><td><span class="tag tag-positive">adopt</span></td><td class="label" style="font-family:'IBM Plex Sans';font-weight:400;">state.md — written telegraphic</td></tr>
+        <tr><td class="label">Mechanical validator for rewritten files</td><td><span class="tag tag-neutral">defer</span></td><td class="label" style="font-family:'IBM Plex Sans';font-weight:400;">over-machinery for a model-authored file</td></tr>
+        <tr><td class="label">Full compression applied to all output</td><td><span class="tag tag-accent">reject</span></td><td class="label" style="font-family:'IBM Plex Sans';font-weight:400;">this user's deliverables are prose, docs, decks</td></tr>
+        <tr><td class="label">Intensity levels (lite / full / ultra / wenyan)</td><td><span class="tag tag-accent">reject</span></td><td class="label" style="font-family:'IBM Plex Sans';font-weight:400;">two registers is the only dial needed</td></tr>
+        <tr><td class="label">Compressed-output subagents ("cavecrew")</td><td><span class="tag tag-accent">reject</span></td><td class="label" style="font-family:'IBM Plex Sans';font-weight:400;">measured 0% subagent usage in this environment</td></tr>
+        <tr><td class="label">MCP tool-description proxy ("caveman-shrink")</td><td><span class="tag tag-accent">reject</span></td><td class="label" style="font-family:'IBM Plex Sans';font-weight:400;">no MCP servers configured — revisit if that changes</td></tr>
+        <tr><td class="label">Auto-triggering skill description</td><td><span class="tag tag-accent">reject</span></td><td class="label" style="font-family:'IBM Plex Sans';font-weight:400;">named anti-pattern — accidental loads cost the whole skill file</td></tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top:44px;">
+      <div class="eyebrow" style="margin-bottom:20px;">Four execution deltas shipped in v2</div>
+      <div style="display:flex;flex-direction:column;gap:18px;">
+        <div style="display:flex;gap:20px;align-items:flex-start;">
+          <span style="width:32px;height:32px;border-radius:50%;background:var(--positive);color:#fff;display:flex;align-items:center;justify-content:center;font:600 15px 'IBM Plex Sans';flex:none;">1</span>
+          <p style="font:400 17px/1.6 'IBM Plex Sans';color:var(--ink-soft);"><code>hooks/rules.md</code> — four rule appends (tokenizer anti-rules + Auto-Clarity, decisive-error-line, big-file discipline, compressed state.md), total kept under 500 tokens.</p>
+        </div>
+        <div style="display:flex;gap:20px;align-items:flex-start;">
+          <span style="width:32px;height:32px;border-radius:50%;background:var(--positive);color:#fff;display:flex;align-items:center;justify-content:center;font:600 15px 'IBM Plex Sans';flex:none;">2</span>
+          <p style="font:400 17px/1.6 'IBM Plex Sans';color:var(--ink-soft);"><code>hooks/context-watch.py</code> — <code>/min-tokens</code>, <code>off</code>, <code>on</code> now handled entirely inside the hook; <code>save</code> still passes through to the model.</p>
+        </div>
+        <div style="display:flex;gap:20px;align-items:flex-start;">
+          <span style="width:32px;height:32px;border-radius:50%;background:var(--positive);color:#fff;display:flex;align-items:center;justify-content:center;font:600 15px 'IBM Plex Sans';flex:none;">3</span>
+          <p style="font:400 17px/1.6 'IBM Plex Sans';color:var(--ink-soft);"><code>skills/min-tokens/SKILL.md</code> — slimmed to <code>save</code> as the primary subcommand; status/off/on reduced to a one-line fallback note.</p>
+        </div>
+        <div style="display:flex;gap:20px;align-items:flex-start;">
+          <span style="width:32px;height:32px;border-radius:50%;background:#fff;border:1.5px solid #CFC6B4;color:var(--muted);display:flex;align-items:center;justify-content:center;font:600 15px 'IBM Plex Sans';flex:none;">4</span>
+          <p style="font:400 17px/1.6 'IBM Plex Sans';color:var(--ink-soft);">Chat variant (Phase 5) &amp; week-over-week validation (Phase 6) — carry the same rules verbatim; still pending, honest-numbers standard: only a real A/B counts, never an estimate.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 05 FINAL PRODUCT -->
+<section>
+  <div class="wrap">
+    <div class="secnum">05</div>
+    <h2 style="font-size:52px;margin:20px 0 22px;">The final product.</h2>
+    <p class="prose" style="font:400 20px/1.6 'IBM Plex Sans';color:var(--ink-soft);margin-bottom:44px;">
+      A single installable Claude Code plugin — <code>plugin.json</code>, <code>hooks/</code>,
+      <code>scripts/</code>, one <code>skills/min-tokens/</code> — built, installed, and live-verified:
+      a resumed session comes up with the rules block injected, the old plugin gone, and the context
+      warning firing correctly.
+    </p>
+
+    <div class="eyebrow" style="margin-bottom:16px;">Install</div>
+    <pre style="margin-bottom:40px;"><code>claude plugin marketplace add /path/to/min-tokens
+claude plugin install min-tokens@min-tokens
+claude plugin disable ponytail@ponytail   # if present — absorbed into rule 10</code></pre>
+
+    <div class="eyebrow" style="margin-bottom:16px;">Model routing — habit, not automation</div>
+    <table style="margin-bottom:44px;">
+      <thead><tr><th>work</th><th>model</th><th>effort</th></tr></thead>
+      <tbody>
+        <tr><td class="label">Architecture, planning, hard debugging, evals design</td><td class="label" style="font-family:'IBM Plex Mono';font-weight:400;color:var(--ink-soft);">Opus / Fable</td><td>high</td></tr>
+        <tr><td class="label">Executing a clear plan, refactors, tests, CRUD, docs from an outline</td><td class="label" style="font-family:'IBM Plex Mono';font-weight:400;color:var(--positive-2);font-weight:600;">Sonnet (default)</td><td>medium / low</td></tr>
+        <tr><td class="label">Mechanical edits, renames, log parsing, format conversion</td><td class="label" style="font-family:'IBM Plex Mono';font-weight:400;color:var(--ink-soft);">Haiku</td><td>low</td></tr>
+      </tbody>
+    </table>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+      <div class="card">
+        <div class="ec" style="--c:var(--info);--s:44px;margin-bottom:16px;"><svg viewBox="0 0 24 24" fill="none" stroke="var(--info)" stroke-width="1.75" width="20" height="20"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zM12 6v6l4 2"/></svg></div>
+        <div style="font:600 18px 'IBM Plex Sans';margin-bottom:6px;">Thresholds</div>
+        <p style="font:400 16px/1.55 'IBM Plex Sans';color:var(--ink-soft);">Soft warning at 80K context, hard at 120K. Override via <code>MIN_TOKENS_SOFT</code> / <code>MIN_TOKENS_HARD</code>.</p>
+      </div>
+      <div class="card">
+        <div class="ec" style="--c:var(--positive);--s:44px;margin-bottom:16px;"><svg viewBox="0 0 24 24" fill="none" stroke="var(--positive)" stroke-width="1.75" width="20" height="20"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div style="font:600 18px 'IBM Plex Sans';margin-bottom:6px;">Target</div>
+        <p style="font:400 16px/1.55 'IBM Plex Sans';color:var(--ink-soft);">3–5&times; stretch of the plan limit at equal output quality — measured against a saved 7-day baseline, never estimated.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 HOW TO USE IT -->
+<section style="background:var(--card-2);">
+  <div class="wrap">
+    <div class="secnum">06</div>
+    <h2 style="font-size:52px;margin:20px 0 22px;">Using it well.</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;" class="grid-2">
+      <div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+          <div class="ec" style="--c:var(--positive);--s:36px;"><svg viewBox="0 0 24 24" fill="none" stroke="var(--positive)" stroke-width="2" width="18" height="18"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <span style="font:600 18px 'IBM Plex Sans';color:var(--positive-2);">Do</span>
+        </div>
+        <ul style="margin:0;padding-left:0;list-style:none;line-height:2.0;color:var(--ink-soft);font-size:17px;">
+          <li>Let Sonnet be the default; escalate to Opus/Fable deliberately for planning or hard debugging, then step back down</li>
+          <li>Run <code>/min-tokens save</code> at task boundaries, then <code>/clear</code> — never <code>/compact</code></li>
+          <li>Switch models only at task boundaries — the prompt cache is per-model</li>
+          <li>Read <code>state.md</code> instead of re-exploring the codebase when one exists</li>
+          <li>Cap noisy command output; quote the one decisive error line on failure</li>
+        </ul>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+          <div class="ec" style="--c:var(--accent);--s:36px;"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" width="16" height="16"><path d="M18 6L6 18M6 6l12 12" stroke-linecap="round"/></svg></div>
+          <span style="font:600 18px 'IBM Plex Sans';color:var(--accent);">Don't</span>
+        </div>
+        <ul style="margin:0;padding-left:0;list-style:none;line-height:2.0;color:var(--ink-soft);font-size:17px;">
+          <li>Set thinking-token caps to save spend — that is a quality guardrail, not a lever</li>
+          <li>Compress a deliverable — prose, code, decks, explanations stay full quality</li>
+          <li>Re-emit a whole large HTML file for one edit — patch it instead</li>
+          <li>Treat an estimated saving as real — only a measured week-over-week A/B counts</li>
+          <li>Spawn subagents or web-fetches casually — each re-pays the full session baseline</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CLOSING -->
+<section style="background:var(--dark);border-bottom:none;padding:110px 0;">
+  <div class="wrap" style="text-align:center;">
+    <h2 style="font-size:60px;color:var(--paper);margin-bottom:22px;">Same thinking. Same quality.<br>A fraction of the spend.</h2>
+    <p style="font:400 20px/1.5 'IBM Plex Sans';color:#A9B4BD;max-width:680px;margin:0 auto 34px;">
+      min-tokens is one plugin, one skill, and a governing rule: every token it spends has to earn its way back.
+    </p>
+    <div class="taglist" style="justify-content:center;">
+      <span class="tag" style="background:rgba(255,255,255,.10);color:var(--paper);">MIT licensed</span>
+      <span class="tag" style="background:rgba(255,255,255,.10);color:var(--paper);">Claude Code plugin</span>
+      <span class="tag" style="background:rgba(255,255,255,.10);color:var(--paper);">Zero-dependency scripts</span>
+      <span class="tag" style="background:rgba(255,255,255,.10);color:var(--paper);">Open source</span>
+    </div>
+  </div>
+</section>
+
+<div class="footer-mark">
+  <div style="display:flex;align-items:center;gap:16px;">
+    <div class="dots-sm"></div>
+    <span class="label">min-tokens — token economy, zero quality loss.</span>
+  </div>
+  <span class="label mono">v2 · 24 Jul 2026</span>
+</div>
+
+</body>
+</html>
