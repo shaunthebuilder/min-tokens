@@ -27,6 +27,22 @@ Write or refresh `.claude/state.md` in the current project (create the `.claude/
 <ordered short list>
 ```
 
+## executable plan artifact (for model handoff)
+Rule 9 requires any plan that a cheaper model (or a fresh thread) will execute to be an *executable artifact*, not a discussion. Write the reasoning INTO each step so the executor never has to re-derive it. Save to `plan.md` and point `state.md` `## Now`/`## Next` at it before `save`.
+
+Discursive (bad — forces re-reasoning): "We should probably update the auth middleware to handle the new token format, then make sure the tests still pass."
+
+Executable (good):
+```markdown
+## Step 1 — accept new JWT `kid` header
+- File: src/auth/middleware.ts:42 (`verifyToken`)
+- Change: read `header.kid`; if absent, fall back to default key (current behavior)
+- Why: rotated keys now stamp `kid`; missing = legacy token, must still verify
+- Accept: `npm test -- auth/middleware.test.ts` green; add case for absent `kid`
+## Step 2 — ...
+```
+Each step is self-contained: exact path/symbol, the change, the reason, and a check the executor can run without judgement calls.
+
 ## Fallback: status / off / on (only if the hook is disabled)
 The hook handles these for free; do this only if it didn't fire.
 - **status** — run both in one Bash block, then report context size & % of ceiling, this week's weighted usage by model, and the single highest-value action ("switch to Sonnet", "save + clear", or "nothing — efficient"). Scripts under `${CLAUDE_PLUGIN_ROOT}/scripts/` (fallback: `~/.claude/plugins/cache/min-tokens*/`):
