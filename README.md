@@ -10,7 +10,8 @@ One always-on rules block, context-ceiling warnings, and a single `/min-tokens` 
 
 ## What it does (zero touch)
 
-- **Session-start rules** — every new thread, an ~500-token, 11-rule block (`min-tokens/hooks/rules.md`) is injected: two output registers, surgical reads, capped command output, batching, screenshot discipline, no casual subagents/web-fetches, the `state.md` protocol, model-fit habits, a build-lazy ladder, and a never-economize guardrail. Nothing to invoke.
+- **Session-start rules** — every new thread, a ~1.1K-token block (`min-tokens/hooks/rules.md`) is injected: the cost model itself (what a token in context actually costs, so the model can reason rather than pattern-match), then 11 rules — two output registers, surgical reads, capped command and search output, batching, screenshot discipline, no casual subagents/web-fetches, the `state.md` protocol, model-fit habits, a build-lazy ladder, and a never-economize guardrail. Injected once and cached; nothing to invoke.
+- **Large-result notices** — a `PostToolUse` hook reports what an oversized tool result cost (`~32K tokens to context permanently`), at most 3× per session, above ~10K tokens. A number, never a directive: a hook that discourages reading is a hook that degrades answers.
 - **Context-ceiling warnings** — a `UserPromptSubmit` hook estimates live context from the transcript and prints a one-line warning only at ≥80K (soft) and ≥120K (hard) tokens. Silent otherwise.
 - **`/min-tokens`** — status (context size, this week's weighted usage by model, the single highest-value action). Answered by the hook with **zero model tokens**.
 - **`/min-tokens save`** — writes/refreshes `.claude/state.md` so the next session reads ~1–2K tokens of state instead of re-exploring the codebase. Then `/clear` (never `/compact`). The one subcommand that spends a model turn — it summarizes the conversation.

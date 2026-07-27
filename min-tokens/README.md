@@ -4,7 +4,8 @@ A Claude Code plugin that stretches the $20 Pro plan **without any regression in
 
 ## What it does (zero touch)
 
-- **Session-start rules** — every new thread, the plugin injects an ~500-token, 11-rule block (see `hooks/rules.md`): two output registers, surgical reads, capped command output, batching, screenshot discipline, no casual subagents/web-fetches, the state.md protocol, model-fit habits, ponytail's build-lazy ladder, and the never-economize guardrail. Nothing to invoke.
+- **Session-start rules** — every new thread, the plugin injects a ~1.1K-token block (see `hooks/rules.md`): the cost model itself (what a token in context actually costs, so the model can reason rather than pattern-match), then 11 rules — two output registers, surgical reads, capped command and search output, batching, screenshot discipline, no casual subagents/web-fetches, the state.md protocol, model-fit habits, ponytail's build-lazy ladder, and the never-economize guardrail. Injected once and cached; nothing to invoke.
+- **Large-result notices** — a `PostToolUse` hook reports what an oversized tool result cost (`~32K tokens to context permanently`), at most 3× per session, above ~10K tokens. A number, never a directive: a hook that discourages reading is a hook that degrades answers.
 - **Context-ceiling warnings** — a `UserPromptSubmit` hook estimates live context from the transcript and prints a one-line warning only at ≥80K (soft) and ≥120K (hard). Silent otherwise.
 - **`/min-tokens`** — status (context size + this week's weighted usage by model + the single highest-value action). Answered by the hook with **zero model tokens** — the prompt never reaches the model.
 - **`/min-tokens save`** — write/refresh `.claude/state.md` so the next session reads ~1–2K of state instead of re-exploring the codebase. Then `/clear` (never `/compact`). The one subcommand that runs the model (it summarizes the conversation).

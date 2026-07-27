@@ -274,7 +274,7 @@
     <p class="prose" style="font:400 19px/1.6 'IBM Plex Sans';color:var(--ink-soft);margin-bottom:40px;">
       v1 shipped from the measured ground truth in §01: a plugin absorbing and retiring an older,
       six-skill sprawl (<em>ponytail</em>), replacing it with one skill, invisible hooks, and a rules
-      block under 500 tokens. v2 followed a deep external review — a full read of a comparable
+      block of ~800 tokens. v2 followed a deep external review — a full read of a comparable
       open-source project, <span class="mono">caveman</span> — adopted where the evidence held, rejected
       where it didn't.
     </p>
@@ -285,9 +285,10 @@
         Caveman's own published numbers showed its output-compression skill costs ~1–1.5K input tokens
         per turn, and a 65% output reduction collapses to just <strong>14–21% session-level savings</strong>
         — because output is a minority of spend. That matched this project's own measurement almost
-        exactly: output is 23% of weighted spend, cache reads are 47%. The two projects' levers barely
-        overlap, which is exactly why min-tokens' rules block stays under 500 tokens instead of growing
-        toward caveman's 1–1.5K.
+        exactly: output is 17.8% of weighted spend, while cache writes (43.1%) and reads (39.1%)
+        together are 82%. The two projects' levers barely overlap. Caveman spends its budget
+        compressing the 18% bucket on every turn; min-tokens spends a comparable one-off, cached at
+        the head of the session, on the 82% bucket.
       </p>
     </div>
 
@@ -314,7 +315,7 @@
       <div style="display:flex;flex-direction:column;gap:18px;">
         <div style="display:flex;gap:20px;align-items:flex-start;">
           <span style="width:32px;height:32px;border-radius:50%;background:var(--positive);color:#fff;display:flex;align-items:center;justify-content:center;font:600 15px 'IBM Plex Sans';flex:none;">1</span>
-          <p style="font:400 17px/1.6 'IBM Plex Sans';color:var(--ink-soft);"><code>hooks/rules.md</code> — four rule appends (tokenizer anti-rules + Auto-Clarity, decisive-error-line, big-file discipline, compressed state.md), total kept under 500 tokens.</p>
+          <p style="font:400 17px/1.6 'IBM Plex Sans';color:var(--ink-soft);"><code>hooks/rules.md</code> — four rule appends (tokenizer anti-rules + Auto-Clarity, decisive-error-line, big-file discipline, compressed state.md), bringing the block to ~800 tokens.</p>
         </div>
         <div style="display:flex;gap:20px;align-items:flex-start;">
           <span style="width:32px;height:32px;border-radius:50%;background:var(--positive);color:#fff;display:flex;align-items:center;justify-content:center;font:600 15px 'IBM Plex Sans';flex:none;">2</span>
