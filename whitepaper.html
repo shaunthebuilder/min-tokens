@@ -232,8 +232,10 @@
           <p style="font:400 17px/1.6 'IBM Plex Sans';color:var(--ink-soft);max-width:640px;">
             <code>/min-tokens save</code> writes a compressed-register state file — telegraphic prose,
             structure kept, every path/command/name exact — so the next session reads ~1–2K tokens of
-            state instead of re-exploring the codebase. Then the user runs <code>/clear</code>, never
-            <code>/compact</code>.
+            state instead of re-exploring the codebase. Then the user starts a new thread
+            (<code>/clear</code> in the CLI), never <code>/compact</code>. A new thread and
+            <code>/clear</code> cost the same — both begin a fresh context that reads the state file
+            back — but the new thread leaves the prior conversation readable.
           </p>
         </div>
       </div>
@@ -389,7 +391,7 @@ claude plugin disable ponytail@ponytail   # if present — absorbed into rule 10
         </div>
         <ul style="margin:0;padding-left:0;list-style:none;line-height:2.0;color:var(--ink-soft);font-size:17px;">
           <li>Let Sonnet be the default; escalate to Opus/Fable deliberately for planning or hard debugging, then step back down</li>
-          <li>Run <code>/min-tokens save</code> at task boundaries, then <code>/clear</code> — never <code>/compact</code></li>
+          <li>Run <code>/min-tokens save</code> at task boundaries, then start a new thread (<code>/clear</code> in the CLI) — never <code>/compact</code></li>
           <li>Switch models only at task boundaries — the prompt cache is per-model</li>
           <li>Read <code>state.md</code> instead of re-exploring the codebase when one exists</li>
           <li>Cap noisy command output; quote the one decisive error line on failure</li>

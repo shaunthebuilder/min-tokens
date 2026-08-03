@@ -2,7 +2,7 @@
 
 Token economy for [Claude Code](https://claude.com/claude-code) — **stretch a fixed-price plan 3–5× with zero regression in reasoning, planning, creativity, or deliverable quality.**
 
-One always-on rules block, context-ceiling warnings, and a single `/min-tokens` control surface. Absorbs and replaces the old `ponytail` plugin.
+One always-on rules block, a context gate, out-of-band state recovery, and a single `/min-tokens` control surface. Absorbs and replaces the old `ponytail` plugin.
 
 - **[Whitepaper](whitepaper.html)** — intent, features, the v1→v2 evolution, and how to use it well.
 - **[Quickstart](quickstart.html)** — non-technical install-and-go guide.
@@ -10,14 +10,16 @@ One always-on rules block, context-ceiling warnings, and a single `/min-tokens` 
 
 ## What it does (zero touch)
 
-- **Session-start rules** — every new thread, a ~1.1K-token block (`min-tokens/hooks/rules.md`) is injected: the cost model itself (what a token in context actually costs, so the model can reason rather than pattern-match), then 11 rules — two output registers, surgical reads, capped command and search output, batching, screenshot discipline, no casual subagents/web-fetches, the `state.md` protocol, model-fit habits, a build-lazy ladder, and a never-economize guardrail. Injected once and cached; nothing to invoke.
+- **Session-start rules** — every new thread, a ~1.5K-token block (`min-tokens/hooks/rules.md`) is injected: the cost model itself (what a token in context actually costs, so the model can reason rather than pattern-match), then 11 rules — two output registers, surgical reads, capped command and search output, batching, screenshot discipline, no casual subagents/web-fetches, the `state.md` protocol, model-fit habits, a build-lazy ladder, and a never-economize guardrail. Injected once and cached; nothing to invoke.
 - **Large-result notices** — a `PostToolUse` hook reports what an oversized tool result cost (`~32K tokens to context permanently`), at most 3× per session, above ~10K tokens. A number, never a directive: a hook that discourages reading is a hook that degrades answers.
-- **Context-ceiling warnings** — a `UserPromptSubmit` hook estimates live context from the transcript and prints a one-line warning only at ≥80K (soft) and ≥120K (hard) tokens. Silent otherwise.
+- **Context gate** — a `UserPromptSubmit` hook estimates live context from the transcript. Silent below 95K. At ≥95K it holds **every** message and offers three one-word choices: `go` (continue — costs zero tokens, since the hook intercepts before the model runs), `save` (update `.claude/state.md`, then answer), `new` (save + hand the message to a fresh thread). Your message is stashed and re-injected, so nothing is retyped. At ≥125K, `go` also forces a one-time state.md save so an abandoned thread stays recoverable; at ≥150K the wording escalates but `go` is never taken away. It fires on every message because it costs nothing — a warning you have to be lucky to see is not a warning.
+- **State recovery for abandoned threads** — if a thread ends without a save, the next session in that project rebuilds `.claude/state.md` from the old transcript **out of band**: a detached `claude -p` call (Sonnet, medium effort, Haiku fallback) reads the previous transcript filtered to human prose only — no tool calls, no tool results, no thinking, a ~99% byte cut — and rewrites the file on disk. Not one token enters the new thread's context. It skips itself whenever the previous thread's work was already saved, holds a per-project lock, keeps timestamped backups, and never replaces a good file with a malformed reply or one that sheds more than 25% of what it replaces. Full knob list in `min-tokens/README.md`.
 - **`/min-tokens`** — status (context size, this week's weighted usage by model, the single highest-value action). Answered by the hook with **zero model tokens**.
-- **`/min-tokens save`** — writes/refreshes `.claude/state.md` so the next session reads ~1–2K tokens of state instead of re-exploring the codebase. Then `/clear` (never `/compact`). The one subcommand that spends a model turn — it summarizes the conversation.
+- **`/save`** (or **`/min-tokens save`**) — writes/refreshes `.claude/state.md` so the next session reads ~1–2K tokens of state instead of re-exploring the codebase. Then start a new thread — `/clear` if you're in the CLI, never `/compact`. The one subcommand that spends a model turn, since it summarizes the conversation. It works while the gate is holding a prompt and releases that prompt afterwards.
+- **`/min-tokens debt`** — the ledger of deliberate shortcuts. Rule 10 has the model mark each one with a `min:` comment naming its ceiling and upgrade path; this walks the project, groups every marker by file, and prints them verbatim. Answered by the hook with **zero model tokens** — it's a grep-and-group, so the harness does it.
 - **`/min-tokens off` / `on`** — kill switch, also answered by the hook for free.
 
-The only thing that can't be automated is typing `/clear` when warned.
+The only thing that can't be automated is starting the new thread when warned. A new thread and `/clear` cost exactly the same — both begin a fresh context that reads `state.md` back — but the new thread leaves the old conversation scrollable, so prefer it wherever the UI has threads.
 
 ## Why
 
@@ -55,7 +57,7 @@ Sonnet is the default; escalate deliberately and de-escalate the moment planning
 
 ## Thresholds
 
-Override via env: `MIN_TOKENS_SOFT` (default 80000), `MIN_TOKENS_HARD` (default 120000).
+Override via env: `MIN_TOKENS_SOFT` (gate threshold, default 95000), `MIN_TOKENS_AUTO` (forced-save threshold, default 125000), `MIN_TOKENS_HARD` (default 150000). State recovery has its own `MIN_TOKENS_RECOVER_*` knobs — see `min-tokens/README.md`; `MIN_TOKENS_NO_RECOVER=1` disables recovery alone.
 
 ## Guardrails — never economized
 

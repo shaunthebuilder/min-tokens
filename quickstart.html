@@ -169,12 +169,12 @@
 
   <div class="hero">
     <p class="tag">← the one thing you do</p>
-    <h2>When you see the context warning, type <kbd>/clear</kbd>.</h2>
-    <div class="warnbar">⚠ context ~80K — wrap up, then /clear</div>
-    <p>That's the whole job. Your work is saved automatically the moment before, so <kbd>/clear</kbd> starts a fresh, cheap session that already knows where you left off. Use <kbd>/clear</kbd>, never <span class="mono">/compact</span>.</p>
+    <h2>When you see the context warning, start a new thread.</h2>
+    <div class="warnbar">⚠ context ~80K — wrap up, then start a new thread</div>
+    <p>That's the whole job. Your work is saved automatically the moment before, so a new thread starts fresh and cheap while already knowing where you left off — and your old conversation stays there to scroll back through. In the CLI, <kbd>/clear</kbd> does the same thing. Never <span class="mono">/compact</span>.</p>
   </div>
 
-  <p class="note">Why not <span class="mono">/compact</span>? Compacting re-reads your entire session to summarize it — that's the expensive thing min-tokens exists to avoid. <kbd>/clear</kbd> + the saved state is the cheap path.</p>
+  <p class="note">Why not <span class="mono">/compact</span>? Compacting re-reads your entire session to summarize it — that's the expensive thing min-tokens exists to avoid. A fresh thread + the saved state is the cheap path. (A new thread and <kbd>/clear</kbd> cost identically; the thread just keeps the history visible.)</p>
 
   <h3 class="section">Everything else is automatic</h3>
   <ul class="auto">

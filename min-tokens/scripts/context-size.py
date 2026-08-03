@@ -3,7 +3,7 @@
 Usage: context-size.py [transcript.jsonl]   (defaults to newest jsonl for the current directory)."""
 import sys, os, re, glob, json
 
-SOFT = int(os.environ.get("MIN_TOKENS_SOFT", "80000"))
+SOFT = int(os.environ.get("MIN_TOKENS_SOFT", "95000"))
 
 
 def newest_transcript():
