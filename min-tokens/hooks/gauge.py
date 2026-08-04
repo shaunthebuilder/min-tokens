@@ -20,7 +20,23 @@ duplicated lines are the cheaper risk.
 Fail-silent: any error prints nothing and exits 0. A broken statusline must
 never break a session, and a broken Stop hook must never trap a turn.
 """
-import sys, os, json
+import sys, os, json, re, datetime
+
+# Style-contract compliance log (Stop mode only). Silent, zero tokens, never
+# shown to the user: it answers "is the response contract being followed" on day
+# two instead of at the fortnight review. Regexes are copied verbatim from
+# scripts/style-ab.py so the log and the fortnight instrument cannot disagree.
+STYLE_LOG = os.path.join(os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~/.claude"),
+                         "min-tokens-style.log")
+FENCE = re.compile(r"```.*?```", re.S)
+PREAMBLE = re.compile(r"^\s*(i'?ll\b|let me\b|i'?m going to\b|i will\b|first,|looking at\b|"
+                      r"i'?ve been\b|now i'?ll\b|to (do|answer) (this|that)\b|"
+                      r"here'?s what i\b|i need to\b|let'?s\b)", re.I)
+VERDICT = re.compile(r"^\s*(done\b|fixed\b|yes\b|no\b|not\b|it (is|does|works|doesn'?t)|"
+                     r"\W*\d|the (answer|cause|problem|number|verdict)\b|"
+                     r"all \w+ pass|passed?\b|fail(ed|s)?\b|works\b|nothing\b|"
+                     r"you (can|need|have|should)\b|there (is|are|was|were)\b|"
+                     r"that'?s\b|this (is|does)\b|both\b|neither\b|confirmed\b)", re.I)
 
 HARD = int(os.environ.get("MIN_TOKENS_HARD", "150000"))
 ASK_AT = int(os.environ.get("MIN_TOKENS_SOFT", "95000"))
@@ -47,6 +63,46 @@ def last_assistant_usage(path):
             if u:
                 return u
     return None
+
+
+def last_assistant_text(path):
+    """The reply the user actually reads: last assistant text block, code stripped."""
+    with open(path, "rb") as f:
+        f.seek(0, 2)
+        f.seek(max(0, f.tell() - 200_000))
+        lines = f.read().decode("utf-8", "replace").splitlines()
+    for line in reversed(lines):
+        try:
+            rec = json.loads(line)
+        except Exception:
+            continue
+        if rec.get("type") != "assistant":
+            continue
+        content = (rec.get("message") or {}).get("content")
+        if isinstance(content, str):
+            txt = content
+        elif isinstance(content, list):
+            txt = "\n".join(b.get("text", "") for b in content
+                            if isinstance(b, dict) and b.get("type") == "text")
+        else:
+            continue
+        txt = FENCE.sub(" ", txt).strip()
+        if txt:
+            return txt
+    return ""
+
+
+def log_style(path):
+    txt = last_assistant_text(path)
+    if not txt:
+        return
+    first = txt.splitlines()[0]
+    with open(STYLE_LOG, "a") as f:
+        f.write("%s\t%d\t%s\t%s\n" % (
+            datetime.datetime.now().isoformat(timespec="seconds"),
+            len(txt.split()),
+            "verdict" if VERDICT.match(first) else "-",
+            "preamble" if PREAMBLE.match(first) else "-"))
 
 
 def ctx_tokens(path):
@@ -85,7 +141,13 @@ def main():
     if os.path.exists(os.path.join(config_dir, ".min-tokens-off")):
         return
     data = json.loads(sys.stdin.read().lstrip("﻿"))
-    ctx = ctx_tokens(data.get("transcript_path"))
+    tp = data.get("transcript_path")
+    if "--stop" in sys.argv and tp and os.path.exists(tp):
+        try:
+            log_style(tp)
+        except Exception:
+            pass  # the log must never cost a turn
+    ctx = ctx_tokens(tp)
     if ctx is None:
         return
     if "--stop" in sys.argv:

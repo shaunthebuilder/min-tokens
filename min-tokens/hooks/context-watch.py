@@ -61,8 +61,31 @@ SAVE_RE = re.compile(r"^/(?:save|min-tokens:save|min-tokens(?::min-tokens)?\s+sa
 SAVE_MARK = "min-tokens:save-command"
 
 
+# On UserPromptSubmit, Claude Code parses stdout as JSON if it can and treats it
+# as context text otherwise. Plain text printed before a block turns the block
+# into inert text and the ceiling silently stops working, so nothing may print
+# after block() has fired. This flag is the guard; never remove it.
+_blocked = False
+
+
 def block(reason):
+    global _blocked
+    _blocked = True
     sys.stdout.write(json.dumps({"decision": "block", "reason": reason.strip()}))
+
+
+def style_reminder():
+    """Re-inject the three load-bearing response laws next to the user's message.
+
+    session-start.sh prints the full contract once, at token zero; by the tenth
+    turn it sits tens of thousands of tokens back. This is the part that decays.
+    """
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               "style-reminder.md")) as f:
+            print(f.read().strip())
+    except Exception:
+        pass
 
 
 def status_reason(transcript_path):
@@ -155,15 +178,21 @@ def recovered_notice(session_id):
     SessionStart reads state.md in ~5s; the detached recovery lands tens of
     seconds later, so without this the thread runs on the stale copy it already
     read and the rewrite is invisible to it.
+
+    Returns the text rather than printing it: a turn that both recovers and hits
+    the ceiling would otherwise print plain text ahead of the block JSON, which
+    makes the block inert. The caller prints it, or folds it into the block
+    reason.
     """
     try:
         flag = os.path.join(WARN_DIR, f"{session_id or 'unknown'}-recovered")
         if not os.path.exists(flag):
-            return
+            return ""
         os.remove(flag)
-        print(".claude/state.md was rewritten from the previous thread after this session started — re-read it before relying on it.")
+        return (".claude/state.md was rewritten from the previous thread after this "
+                "session started — re-read it before relying on it.")
     except Exception:
-        pass
+        return ""
 
 
 def _gate_path(session_id):
@@ -297,13 +326,19 @@ def gate_reason(k, ctx):
             "\U0001f195 new \u2014 save, then hand it to a new thread\n"
             f"\U0001f449 Suggested: {rec}.")
 
-def gate(sid, prompt, ctx, k):
-    """The context gate. Returns nothing; either blocks or emits additionalContext."""
+def gate(sid, prompt, ctx, k, notice=""):
+    """The context gate. Returns nothing; either blocks or emits additionalContext.
+
+    `notice` is recovered_notice()'s text, carried in so it rides inside the
+    block reason instead of printing ahead of the block JSON and voiding it.
+    """
     stash = load_stash(sid)
     answer = (prompt or "").strip().lower()
 
     if stash and answer in ("go", "save", "new"):
         clear_stash(sid)
+        if notice:
+            print(notice)  # safe here: this branch never blocks
         if answer == "go":
             out = ("[context gate] The user chose to continue. Their real message was held by the "
                    "gate and follows below — respond to THAT, not to the word \"go\". Do not "
@@ -336,7 +371,7 @@ def gate(sid, prompt, ctx, k):
 
     # Not an answer (or nothing held): hold this prompt and gate.
     save_stash(sid, prompt or "")
-    block(gate_reason(k, ctx))
+    block((notice + "\n\n" if notice else "") + gate_reason(k, ctx))
 
 
 def read_ctx(tp):
@@ -371,18 +406,20 @@ def main():
     if os.path.exists(OFF_FLAG):
         return
 
-    recovered_notice(sid)
-
+    notice = recovered_notice(sid)
     ctx = read_ctx(tp)
-    if not ctx:
-        return
-    k = ctx // 1000
 
-    if ctx < GATE_AT:
-        clear_stash(sid)  # dropped back under the ceiling (rare); don't strand a held prompt
-        return
+    if ctx >= GATE_AT:
+        gate(sid, prompt, ctx, k=ctx // 1000, notice=notice)
+    else:
+        if notice:
+            print(notice)
+        if ctx:
+            clear_stash(sid)  # dropped back under the ceiling (rare); don't strand a held prompt
 
-    gate(sid, prompt, ctx, k)
+    # Last, and only when nothing blocked — see block()'s note on stdout.
+    if not _blocked:
+        style_reminder()
 
 
 if __name__ == "__main__":

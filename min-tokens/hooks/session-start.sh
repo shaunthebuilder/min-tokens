@@ -9,6 +9,7 @@ payload="$(cat)"
 
 dir="$(cd "$(dirname "$0")" && pwd)"
 cat "$dir/rules.md" 2>/dev/null
+cat "$dir/style.md"
 
 # Phase B: recover state.md from a previous thread that ended without a save.
 # DETACHED with all fds closed — it takes tens of seconds (a separate `claude -p`

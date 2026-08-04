@@ -31,6 +31,14 @@ def check(name, cond, detail=""):
         fails.append(name)
 
 
+REMINDER = open(os.path.join(os.path.dirname(HOOK), "style-reminder.md")).read().strip()
+
+
+def quiet(out):
+    """Silent apart from the per-turn response-contract reminder, which is every turn."""
+    return out.strip() == REMINDER
+
+
 def blocked(out):
     try:
         d = json.loads(out)
@@ -41,7 +49,7 @@ def blocked(out):
 
 # 1. Under the ceiling: silent passthrough.
 out, _ = run("hello", 50000)
-check("under 95K is silent", out == "", repr(out))
+check("under 95K is silent", quiet(out), repr(out))
 
 # 2. At the ceiling: blocks, shows all three choices, user-visible.
 out, cfg = run("do the thing", 96000)
@@ -149,8 +157,9 @@ check("MIN_TOKENS_SOFT honoured", blocked(out) is not None, out)
 r = subprocess.run([sys.executable, HOOK], input="not json", capture_output=True, text=True)
 check("garbage input exits 0 silently", r.returncode == 0 and r.stdout == "", r.stdout)
 r = subprocess.run([sys.executable, HOOK], input=json.dumps({"prompt": "hi"}),
-                   capture_output=True, text=True)
-check("missing transcript exits 0 silently", r.returncode == 0 and r.stdout == "", r.stdout)
+                   capture_output=True, text=True,
+                   env=dict(os.environ, CLAUDE_CONFIG_DIR=tempfile.mkdtemp()))
+check("missing transcript exits 0 silently", r.returncode == 0 and quiet(r.stdout), r.stdout)
 
 # 18. Multi-line prompt beginning with "go" is a prompt, not an answer.
 out, cfg = run("held one", 96000)
@@ -215,7 +224,25 @@ for form in ("/save", "/SAVE", "  /save  ", "/min-tokens:save", "/min-tokens sav
 
 # 27. "save the file" is a normal prompt, not the command.
 out, _ = run("save the config file", 40000)
-check("'save the ...' is not /save", out == "", repr(out))
+check("'save the ...' is not /save", quiet(out), repr(out))
+
+# 28. The response contract reaches the model at session start.
+# Asserts on the HOOK'S OUTPUT, not on the file existing: with style.md present
+# but the session-start.sh edit lost, a file check passes, nothing goes to
+# stderr, and the contract is silently absent. That is the likelier failure.
+HOOKS = os.path.dirname(HOOK)
+out = subprocess.run(["bash", os.path.join(HOOKS, "session-start.sh")], input="{}",
+                     capture_output=True, text=True,
+                     env=dict(os.environ, CLAUDE_CONFIG_DIR=tempfile.mkdtemp(),
+                              MIN_TOKENS_NO_RECOVER="1")).stdout
+check("style.md reaches the model", "RESPONSE CONTRACT" in out, out[-200:])
+
+# 29. The per-turn reminder reaches the model, and never rides with a block.
+out, _ = run("normal turn", 40000)
+check("per-turn reminder reaching the model", "RESPONSE CONTRACT" in out, out)
+out, _ = run("big turn", 96000)
+check("reminder never printed alongside a block",
+      blocked(out) is not None and "RESPONSE CONTRACT" not in out, out)
 
 print("\n" + ("ALL PASS" if not fails else f"{len(fails)} FAILED: {fails}"))
 sys.exit(1 if fails else 0)
